@@ -36,9 +36,10 @@ public class Robot extends TimedRobot {
   public void autonomousPeriodic() {
     _l.putTargetValues();
     _l.distance();
+    _l.run();
 
     _p.putTargetValues();
-    _p.run();
+    //_p.run();
   }
 
   /** This function is called once each time the robot enters teleoperated mode. */
