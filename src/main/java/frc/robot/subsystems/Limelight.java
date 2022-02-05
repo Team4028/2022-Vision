@@ -16,6 +16,10 @@ public class Limelight extends SubsystemBase {
   PIDController _pc;
 
   double kTargetHeight, kMountHeight, kMountAngle;
+  int kDistIters;
+
+  private int distEstIters = 0;
+  private double distEst, distEstTotal;
 
   private Motor _m = Motor.getInstance();
 
@@ -34,8 +38,13 @@ public class Limelight extends SubsystemBase {
 
     // Values for table mount + Sharkbait target
     kTargetHeight = 16;
-    kMountHeight = 6.25;
-    kMountAngle = 0;
+    kMountHeight = 6;
+    kMountAngle = -1.5;
+
+    kDistIters = 20;
+
+    // Limelight is currently set to work on dual target
+    // I think the competition goal is tri target
 
     // Values for Neo 550 on the turret
     _pc = new PIDController(0.0045,0,0);
@@ -47,18 +56,26 @@ public class Limelight extends SubsystemBase {
 
   public double distance() {
     if (entry("tv").getDouble(0) == 1.) {
-      double targetAngle = entry("ty").getDouble(0.);
+      if (distEstIters <= kDistIters) {
+        double targetAngle = entry("ty").getDouble(0.);
 
-      // sussy
-      double dist = Math.abs(
-        (kMountHeight - kTargetHeight) / 
-        Math.tan(Math.toRadians(kMountAngle + targetAngle)));
-
-      SmartDashboard.putNumber("Target Distance", dist);
-      return dist;
-    } else {
-      return 0.;
+        // This is extremely sussy but it works perfectly so I'm going to keep it
+        double dist = Math.abs(
+          (kMountHeight - kTargetHeight) / 
+          Math.tan(Math.toRadians(kMountAngle + targetAngle)));
+        
+        distEstTotal += dist;
+        distEstIters++;
+        put("Distance Estimation Total", dist);
+      } else {
+        distEst = distEstTotal / distEstIters;
+        distEstTotal = 0;
+        distEstIters = 0;
+        put("Target Distance", distEst);
+      }
     }
+
+    return distEst;
   }
 
   public void putTargetValues() {
