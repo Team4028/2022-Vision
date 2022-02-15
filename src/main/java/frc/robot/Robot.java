@@ -37,8 +37,9 @@ public class Robot extends TimedRobot {
     _l.putTargetValues();
     _l.distance();
     _l.run();
+    _l.update();
 
-    _p.putTargetValues();
+    //_p.putTargetValues();
     //_p.run();
   }
 

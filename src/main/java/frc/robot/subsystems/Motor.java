@@ -26,7 +26,8 @@ public class Motor extends SubsystemBase {
     return _instance;
   }
   public Motor() {
-    _m = new CANSparkMax(3, MotorType.kBrushless);
+    // WHO CHANGED THIS TO 1
+    _m = new CANSparkMax(1, MotorType.kBrushless);
     _enc = _m.getEncoder();
     zeroEncoder();
   }

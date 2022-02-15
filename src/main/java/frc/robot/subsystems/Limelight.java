@@ -15,8 +15,7 @@ public class Limelight extends SubsystemBase {
   NetworkTable _nt;
   PIDController _pc;
 
-  double kTargetHeight, kMountHeight, kMountAngle;
-  int kDistIters;
+  double kTargetHeight, kMountHeight, kMountAngle, kDistIters;
 
   private int distEstIters = 0;
   private double distEst, distEstTotal;
@@ -39,7 +38,18 @@ public class Limelight extends SubsystemBase {
     // Values for table mount + Sharkbait target
     kTargetHeight = 16;
     kMountHeight = 6;
-    kMountAngle = -1.5;
+    kMountAngle = -0.45;
+    // These values produce high-accuracy results at 90-120in,
+    // with a Y offset of ~6. At the competition, we're going
+    // to need to find a good distance for high-accuracy.
+    // I'm thinking 8-12 feet should probably be good;
+    // it's where Auton will shoot from, and the only area
+    // that will have a large range of required powers, and maybe angle settings
+    
+    // It'll probably usually be setting 3, but it's not as clear-cut
+    // as close and far shots (1 and 3 resp.). plus, power needs to be adjusted.
+    // In the end, we're probably going to have manual adjustments ready,
+    // in case Limelight dies.
 
     kDistIters = 20;
 
@@ -48,6 +58,11 @@ public class Limelight extends SubsystemBase {
 
     // Values for Neo 550 on the turret
     _pc = new PIDController(0.0045,0,0);
+
+    put("Mount Angle", kMountAngle);
+    put("Mount Height", kMountHeight);
+    put("Target Height", kTargetHeight);
+    put("Distance Iterations", kDistIters);
   }
 
   public void run() {
@@ -56,26 +71,41 @@ public class Limelight extends SubsystemBase {
 
   public double distance() {
     if (entry("tv").getDouble(0) == 1.) {
-      if (distEstIters <= kDistIters) {
-        double targetAngle = entry("ty").getDouble(0.);
-
-        // This is extremely sussy but it works perfectly so I'm going to keep it
-        double dist = Math.abs(
-          (kMountHeight - kTargetHeight) / 
-          Math.tan(Math.toRadians(kMountAngle + targetAngle)));
-        
-        distEstTotal += dist;
-        distEstIters++;
-        put("Distance Estimation Total", dist);
-      } else {
+      //System.out.println(distEstIters);
+      //System.out.println(kDistIters);
+      if (distEstIters >= kDistIters) {
         distEst = distEstTotal / distEstIters;
         distEstTotal = 0;
         distEstIters = 0;
         put("Target Distance", distEst);
       }
+
+      double targetAngle = entry("ty").getDouble(0.);
+
+      // This is extremely sussy but it works perfectly so I'm going to keep it
+      double dist = Math.abs(
+        (kMountHeight - kTargetHeight) / 
+        Math.tan(Math.toRadians(kMountAngle + targetAngle)));
+      
+      System.out.println(dist);
+      distEstTotal += dist;
+      distEstIters++;
+      put("Distance Estimation Total", dist);
     }
 
     return distEst;
+  }
+
+  public void update() {
+    double mountAngle = get("Mount Angle", 0.);
+    double mountHeight = get("Mount Height", 0.);
+    double targetHeight = get("Target Height", 0.);
+    double distIters = get("Distance Iterations", 0.);
+
+    if (mountAngle != kMountAngle) { kMountAngle = mountAngle; }
+    if (mountHeight != kMountHeight) { kMountHeight = mountHeight; }
+    if (targetHeight != kTargetHeight) { kTargetHeight = targetHeight; }
+    if (distIters != kDistIters) { kDistIters = distIters; }
   }
 
   public void putTargetValues() {
@@ -94,6 +124,10 @@ public class Limelight extends SubsystemBase {
 
   public void put(String key, double val) {
     SmartDashboard.putNumber(key, val);
+  }
+
+  public double get(String key, double defaultValue) {
+    return SmartDashboard.getNumber(key, defaultValue);
   }
 
   public static Limelight getInstance() {
